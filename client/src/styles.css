@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+
+@layer base {
+  :root,
+  :host {
+    font-size: var(--font-size);
+  }
+}

@@ -11,8 +11,8 @@ pub async fn handler(
 ) -> Result<impl IntoResponse> {
     match req.action.as_str() {
         "get" => {
-            let config = { state.config.read()?.meta.contents.clone() };
-            let res: JsonValue = json_from_str(&config)?;
+            let meta = { &state.config.read()?.meta.clone() };
+            let res: JsonValue = json_from_str(&meta.contents)?;
 
             Ok(Json(res))
         }

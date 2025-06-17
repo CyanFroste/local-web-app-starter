@@ -53,7 +53,7 @@ async fn main() -> Result<()> {
     axum::serve(
         listener,
         Router::new()
-            .nest("/bridges", bridges::router())
+            .nest("/api/bridges", bridges::router())
             .fallback_service(static_service)
             .layer(CorsLayer::permissive())
             .layer(DefaultBodyLimit::disable())
