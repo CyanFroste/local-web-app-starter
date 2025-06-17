@@ -16,7 +16,7 @@ Set-Location "$root/client"
 pnpm build
 
 Write-Host "==> Moving backend binary to bin folder..."
-Move-Item "$root/target/release/backend.exe" "$binPath/backend.exe"
+Move-Item "$root/backend/target/release/backend.exe" "$binPath/backend.exe"
 
 Write-Host "==> Copying config.json to bin directory..."
 Copy-Item "$root/config.json" "$binPath/config.json"

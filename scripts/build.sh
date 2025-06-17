@@ -20,7 +20,7 @@ cd "$root/client"
 pnpm build
 
 echo "==> Moving backend binary to bin folder..."
-mv "$root/target/release/backend" "$binPath/backend"
+mv "$root/backend/target/release/backend" "$binPath/backend"
 
 echo "==> Copying config.json to bin directory..."
 cp "$root/config.json" "$binPath/config.json"
