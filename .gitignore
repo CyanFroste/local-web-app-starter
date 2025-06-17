@@ -1,0 +1,9 @@
+node_modules/
+target/
+build/
+dist/
+bin/
+
+.exe
+*.log*
+*.db

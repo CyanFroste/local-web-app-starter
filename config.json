@@ -1,0 +1,19 @@
+{
+  "port": 3000,
+  "db": {
+    "mongo": {
+      "name": "<name>",
+      "url": "mongodb://127.0.0.1:27017/<name>",
+      "path": "<data path>"
+    }
+  },
+  "theme": { "fontSize": "${THEME_FONT_SIZE}" },
+  "vars": {
+    "default": {
+      "THEME_FONT_SIZE": "16px"
+    },
+    "mobile": {
+      "THEME_FONT_SIZE": "14px"
+    }
+  }
+}
