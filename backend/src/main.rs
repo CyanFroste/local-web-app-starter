@@ -6,11 +6,9 @@ pub mod routes;
 pub mod utils;
 
 use crate::config::Config;
-use crate::db::mongo::Client as MongoClient;
 use crate::error::{Error, Result};
 use crate::routes::bridges;
 use crate::utils::State;
-
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use reqwest::Client as HttpClient;
@@ -30,8 +28,6 @@ async fn main() -> Result<()> {
     let user_agent = concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
     let http_client = HttpClient::builder().user_agent(user_agent).build()?;
 
-    let mongo_client = MongoClient::new(&config.db.mongo.url, &config.db.mongo.name).await?;
-
     let config = Arc::new(RwLock::new(config));
     let store = Arc::new(RwLock::new(BTreeMap::new()));
 
@@ -39,7 +35,8 @@ async fn main() -> Result<()> {
         http_client,
         config,
         store,
-        mongo_client,
+        mongo_client: None,
+        sqlite_client: None,
     };
 
     let exe_path = env::current_exe()?

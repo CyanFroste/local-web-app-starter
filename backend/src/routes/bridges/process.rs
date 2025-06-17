@@ -18,7 +18,7 @@ pub async fn handler(Json(mut req): Json<BridgeRequest<JsonValue>>) -> Result<im
                 // open::with_detached(path, using)?;
                 unimplemented!();
             } else {
-                // open::that(path)?;
+                open::that(path)?;
             }
 
             Ok(Json(JsonValue::Null))

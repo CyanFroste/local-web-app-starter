@@ -1,3 +1,4 @@
+use crate::db::{CollectionStats, CreateUniqueIndexParams};
 use crate::error::Result;
 use crate::utils::PaginationParams;
 use bson::oid::ObjectId;
@@ -5,9 +6,8 @@ use bson::{Bson, Document, doc, to_document};
 use futures::TryStreamExt;
 use mongodb::options::{FindOptions, IndexOptions};
 use mongodb::{Client as ExternalClient, Collection, Database, IndexModel};
-use serde::{Deserialize, Serialize};
-use serde_json::Value as JsonValue;
-use serde_json::to_value as to_json;
+use serde::Deserialize;
+use serde_json::{Value as JsonValue, to_value as to_json};
 use std::str::FromStr;
 
 pub const PRIMARY_KEY: &str = "_id";
@@ -27,31 +27,18 @@ pub struct MutateItemsParams {
     pub data: Vec<JsonValue>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct CreateUniqueIndexParams {
-    pub collection: String,
-    pub fields: Vec<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CollectionStats {
-    pub name: String,
-    pub count: u64,
-}
-
 #[derive(Debug, Clone)]
 pub struct Client {
-    #[allow(unused)]
-    client: ExternalClient,
+    _client: ExternalClient,
     pub db: Database,
 }
 
 impl Client {
     pub async fn new(url: impl AsRef<str>, db: &str) -> Result<Self> {
-        let client = ExternalClient::with_uri_str(url).await?;
-        let db = client.database(db);
+        let _client = ExternalClient::with_uri_str(url).await?;
+        let db = _client.database(db);
 
-        Ok(Self { client, db })
+        Ok(Self { _client, db })
     }
 
     pub fn collection<T: Send + Sync>(&self, name: &str) -> Collection<T> {
@@ -69,7 +56,7 @@ impl Client {
         }: QueryItemsParams,
     ) -> Result<Vec<JsonValue>> {
         let coll: Collection<Document> = self.collection(&collection);
-        let sort = sort.and_then(|it| it.to_document().inspect_err(|err| eprintln!("{err}")).ok());
+        let sort = sort.and_then(|it| it.to_document().ok());
 
         let options = if let Some(PaginationParams {
             limit: Some(limit),
@@ -91,7 +78,7 @@ impl Client {
         };
 
         let filters = filters
-            .and_then(|it| it.to_document().inspect_err(|err| eprintln!("{err}")).ok())
+            .and_then(|it| it.to_document().ok())
             .unwrap_or_default();
 
         let mut cursor = coll.find(filters).with_options(options).await?;
@@ -112,19 +99,18 @@ impl Client {
         let mut res = Vec::with_capacity(data.len());
 
         for item in data {
-            if let Ok(mut item) = item.to_document().inspect_err(|err| eprintln!("{err}")) {
+            if let Ok(mut item) = item.to_document() {
                 // ! DO NOT ALLOW MANUAL _id CREATION
                 item.remove(PRIMARY_KEY);
 
                 if let Some(item) = coll
                     .insert_one(&item)
                     .await
-                    .inspect_err(|err| eprintln!("{err}"))
                     .ok()
                     .and_then(|x| x.inserted_id.as_object_id())
                     .and_then(|id| {
                         item.insert(PRIMARY_KEY, id.to_hex());
-                        item.to_json().inspect_err(|err| eprintln!("{err}")).ok()
+                        item.to_json().ok()
                     })
                 {
                     res.push(item);
@@ -143,17 +129,16 @@ impl Client {
         let mut res = Vec::with_capacity(data.len());
 
         for item in data {
-            if let Ok(mut item) = item.to_document().inspect_err(|err| eprintln!("{err}")) {
+            if let Ok(mut item) = item.to_document() {
                 if let Some(id) = item.remove(PRIMARY_KEY).and_then(|id| id.as_object_id()) {
                     if let Some(item) = coll
                         .update_one(doc! { PRIMARY_KEY: id }, doc! { "$set": &item })
                         .await
-                        .inspect_err(|err| eprintln!("{err}"))
                         .ok()
                         .and_then(|r| {
                             (r.modified_count > 0).then(|| {
                                 item.insert(PRIMARY_KEY, id.to_hex());
-                                item.to_json().inspect_err(|err| eprintln!("{err}")).ok()
+                                item.to_json().ok()
                             })?
                         })
                     {
@@ -174,18 +159,13 @@ impl Client {
         let mut res = Vec::with_capacity(data.len());
 
         for item in data {
-            if let Ok(item) = item.to_document().inspect_err(|err| eprintln!("{err}")) {
+            if let Ok(item) = item.to_document() {
                 if let Some(id) = item.get(PRIMARY_KEY).and_then(|id| id.as_object_id()) {
                     if let Some(item) = coll
                         .delete_one(doc! { PRIMARY_KEY: id })
                         .await
-                        .inspect_err(|err| eprintln!("{err}"))
                         .ok()
-                        .and_then(|r| {
-                            (r.deleted_count > 0).then(|| {
-                                item.to_json().inspect_err(|err| eprintln!("{err}")).ok()
-                            })?
-                        })
+                        .and_then(|r| (r.deleted_count > 0).then(|| item.to_json().ok())?)
                     {
                         res.push(item);
                     }

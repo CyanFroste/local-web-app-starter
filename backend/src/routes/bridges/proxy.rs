@@ -20,8 +20,6 @@ pub async fn handler(
 
     let req = state.http_client.request(method, &url);
 
-    println!("PROXY REQUEST\n{:#?}\n{:#?}", req, headers);
-
     // ! THIS IS TRIAL AND ERROR
     // this is needed for some reason
     headers.remove(header::USER_AGENT);
@@ -37,8 +35,6 @@ pub async fn handler(
     headers.remove(header::UPGRADE);
 
     let res = req.headers(headers).body(body).send().await?;
-
-    println!("PROXY RESPONSE\n{:#?}", res);
 
     Ok((
         res.status(),

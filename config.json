@@ -1,11 +1,8 @@
 {
   "port": 3000,
   "db": {
-    "mongo": {
-      "name": "<name>",
-      "url": "mongodb://127.0.0.1:27017/<name>",
-      "path": "<data path>"
-    }
+    "mongo": { "name": "<name>", "url": "mongodb://127.0.0.1:27017/<name?>" },
+    "sqlite": { "path": "<data path>" }
   },
   "theme": { "fontSize": "${THEME_FONT_SIZE}" },
   "vars": {

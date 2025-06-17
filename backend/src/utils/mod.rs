@@ -1,5 +1,6 @@
 use crate::config::Config;
 use crate::db::mongo::Client as MongoClient;
+use crate::db::sqlite::Client as SqliteClient;
 use crate::error::{Error, Result};
 use chrono::{DateTime, Local, Utc};
 use reqwest::Client as HttpClient;
@@ -13,7 +14,8 @@ pub struct State {
     pub http_client: HttpClient,
     pub config: Arc<RwLock<Config>>,
     pub store: Arc<RwLock<BTreeMap<String, JsonValue>>>,
-    pub mongo_client: MongoClient,
+    pub mongo_client: Option<MongoClient>,
+    pub sqlite_client: Option<SqliteClient>,
 }
 
 #[derive(Debug, Clone, Deserialize)]

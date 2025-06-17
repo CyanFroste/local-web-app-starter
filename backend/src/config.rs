@@ -65,11 +65,16 @@ pub struct Meta {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Db {
     pub mongo: Mongo,
+    pub sqlite: Sqlite,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Mongo {
     pub name: String,
     pub url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Sqlite {
     pub path: String,
 }
