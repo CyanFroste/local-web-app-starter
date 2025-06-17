@@ -1,4 +1,5 @@
-use crate::{PaginationParams, Result, Timestamp};
+use crate::error::Result;
+use crate::utils::PaginationParams;
 use bson::oid::ObjectId;
 use bson::{Bson, Document, doc, to_document};
 use futures::TryStreamExt;
@@ -32,6 +33,12 @@ pub struct CreateUniqueIndexParams {
     pub fields: Vec<String>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CollectionStats {
+    pub name: String,
+    pub count: u64,
+}
+
 #[derive(Debug, Clone)]
 pub struct Client {
     #[allow(unused)]
@@ -40,8 +47,8 @@ pub struct Client {
 }
 
 impl Client {
-    pub async fn new(uri: impl AsRef<str>, db: &str) -> Result<Self> {
-        let client = ExternalClient::with_uri_str(uri).await?;
+    pub async fn new(url: impl AsRef<str>, db: &str) -> Result<Self> {
+        let client = ExternalClient::with_uri_str(url).await?;
         let db = client.database(db);
 
         Ok(Self { client, db })
@@ -49,19 +56,6 @@ impl Client {
 
     pub fn collection<T: Send + Sync>(&self, name: &str) -> Collection<T> {
         self.db.collection(name)
-    }
-
-    pub async fn find_all(&self, collection: &str) -> Result<Vec<JsonValue>> {
-        let coll: Collection<Document> = self.collection(collection);
-
-        let mut cursor = coll.find(doc! {}).await?;
-        let mut res = vec![];
-
-        while let Some(item) = cursor.try_next().await? {
-            res.push(item.to_json()?);
-        }
-
-        Ok(res)
     }
 
     // ! this will get all the data if no pagination or limit is specified or if limit is 0
@@ -215,27 +209,7 @@ impl Client {
             let coll: Collection<Document> = self.collection(&name);
             let count = coll.estimated_document_count().await?;
 
-            let data = coll
-                .find_one(doc! {})
-                .sort(doc! { MODIFIED_TIME_KEY: -1 })
-                .await?;
-
-            let latest_mt: Option<Timestamp> = data.and_then(|x| {
-                x.get_str(MODIFIED_TIME_KEY)
-                    .ok()
-                    .and_then(|s| s.parse().ok())
-            });
-
-            let latest_mt_formatted = latest_mt
-                .as_ref()
-                .map(|t| t.format(Timestamp::DISPLAY_FORMAT));
-
-            res.push(CollectionStats {
-                name,
-                count,
-                latest_mt,
-                latest_mt_formatted,
-            });
+            res.push(CollectionStats { name, count });
         }
 
         Ok(res)
@@ -302,36 +276,5 @@ impl DocumentExt for Document {
         }
 
         Ok(value)
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CollectionStats {
-    pub name: String,
-    pub count: u64,
-    pub latest_mt: Option<Timestamp>,
-    // for display in backup meta
-    pub latest_mt_formatted: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Backup {
-    pub timestamp: Timestamp,
-    pub timestamp_formatted: String,
-    pub stats: Vec<CollectionStats>,
-}
-
-impl Backup {
-    pub fn new(stats: Vec<CollectionStats>) -> Self {
-        let timestamp = Timestamp::now();
-        let timestamp_formatted = timestamp.format(Timestamp::DISPLAY_FORMAT);
-
-        Self {
-            timestamp,
-            timestamp_formatted,
-            stats,
-        }
     }
 }

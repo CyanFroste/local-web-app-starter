@@ -1,6 +1,32 @@
+use crate::config::Config;
+use crate::db::mongo::Client as MongoClient;
 use crate::error::{Error, Result};
 use chrono::{DateTime, Local, Utc};
+use reqwest::Client as HttpClient;
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
+use std::collections::BTreeMap;
+use std::sync::{Arc, RwLock};
+
+#[derive(Debug, Clone)]
+pub struct State {
+    pub http_client: HttpClient,
+    pub config: Arc<RwLock<Config>>,
+    pub store: Arc<RwLock<BTreeMap<String, JsonValue>>>,
+    pub mongo_client: MongoClient,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct BridgeRequest<T> {
+    pub action: String,
+    pub data: T,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PaginationParams {
+    pub page: Option<u32>,
+    pub limit: Option<u32>,
+}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Timestamp(DateTime<Utc>);

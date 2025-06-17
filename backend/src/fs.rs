@@ -1,6 +1,5 @@
-use crate::{DEFAULT_USER_AGENT, Result};
+use crate::error::{Error, Result};
 use reqwest::Client as HttpClient;
-use reqwest::header;
 use serde::Serialize;
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -37,12 +36,7 @@ pub fn stats(path: &Path) -> Result<Stats> {
 }
 
 pub async fn download_file(http_client: &HttpClient, url: &str, path: &Path) -> Result<()> {
-    let res = http_client
-        .get(url)
-        .header(header::USER_AGENT, DEFAULT_USER_AGENT)
-        .send()
-        .await?;
-
+    let res = http_client.get(url).send().await?;
     let body = res.bytes().await?;
     let mut buf = BufWriter::new(File::create(path)?);
 
@@ -52,11 +46,16 @@ pub async fn download_file(http_client: &HttpClient, url: &str, path: &Path) -> 
     Ok(())
 }
 
-// NOTE: currently only supports reading zip archives
-pub fn read_archive(path: &Path) -> Result<Vec<String>> {
-    let file = File::open(path)?;
-    let archive = ZipArchive::new(file)?;
-    let res = archive.file_names().map(|n| n.to_string()).collect();
+pub fn read_archive(path: &Path, container: &str) -> Result<Vec<String>> {
+    match container {
+        "zip" | "cbz" => {
+            let file = File::open(path)?;
+            let archive = ZipArchive::new(file)?;
+            let res = archive.file_names().map(|n| n.to_string()).collect();
 
-    Ok(res)
+            Ok(res)
+        }
+
+        _ => Err(Error::new("unsupported container")),
+    }
 }
