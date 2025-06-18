@@ -2,7 +2,7 @@
 
 An opinionated but extensible web app for local use.
 The client has api bridges to work with file system, databases and system processes.
-Also includes some nifty utilities such as a key value store, configurations, etc.
+Also includes some nifty utilities such as a CORS proxy, a key value store, configurations, etc.
 
 ## Dev
 
